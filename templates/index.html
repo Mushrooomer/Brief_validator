@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brief Validator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Global styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        /* Dropdown customization */
+        .Select-control {
+            background-color: #f8f9fa !important;
+            border: 1px solid #ccc !important;
+        }
+
+        .Select-placeholder {
+            color: #666 !important;
+        }
+
+        /* Loading spinner customization */
+        ._dash-loading {
+            margin: 200px auto;
+            color: #4627CC;
+        }
+
+        /* Button hover effects */
+        button:hover {
+            opacity: 0.9;
+            transition: opacity 0.2s ease;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+        }
+        .loading-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .critical-item {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-left: 4px solid #ef4444;
+            background-color: #fef2f2;
+        }
+        .critical-item h4 {
+            font-weight: 600;
+            color: #ef4444;
+            margin-bottom: 0.25rem;
+        }
+        .critical-item p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        .logo-container {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='images/EasyLife_logo_basic_small.png') }}" 
+             alt="Brief Validator Logo" 
+             class="h-20 w-auto">
+    </div>
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Brief Validator</h1>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="mb-4">
+                    <label for="brief-text" class="block text-sm font-medium text-gray-700 mb-2">
+                        Paste your brief text here:
+                    </label>
+                    <textarea
+                        id="brief-text"
+                        rows="10"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Paste your brief text here..."></textarea>
+                </div>
+                <button
+                    onclick="validateBrief()"
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Validate Brief
+                </button>
+            </div>
+
+            <div id="results" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Validation Results</h2>
+                
+                <div id="critical-missing" class="mb-6">
+                    <h3 class="text-lg font-medium text-red-600 mb-2">Critical Information Missing:</h3>
+                    <div id="critical-list" class="space-y-2"></div>
+                </div>
+
+                <div id="non-critical-missing" class="mb-6">
+                    <h3 class="text-lg font-medium text-yellow-600 mb-2">Non-Critical Information Missing:</h3>
+                    <ul id="non-critical-list" class="list-disc pl-5 text-gray-700"></ul>
+                </div>
+
+                <div id="warnings" class="mb-6">
+                    <h3 class="text-lg font-medium text-orange-600 mb-2">Validation Warnings:</h3>
+                    <ul id="warnings-list" class="list-disc pl-5 text-gray-700"></ul>
+                </div>
+
+                <div id="critical-info-explanation" class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-medium text-blue-600 mb-4">Why Critical Information Matters</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-700 mb-2">Budget</h4>
+                            <p class="text-sm text-gray-600">Essential for planning media mix and determining campaign scope. Without it, we cannot allocate resources effectively or ensure ROI.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-700 mb-2">Languages</h4>
+                            <p class="text-sm text-gray-600">Crucial for content creation and media planning. Affects creative development, media buying, and campaign effectiveness.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-700 mb-2">Period</h4>
+                            <p class="text-sm text-gray-600">Vital for timing, media planning, and resource allocation. Ensures all deliverables are properly scheduled.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-700 mb-2">Target Audience</h4>
+                            <p class="text-sm text-gray-600">Fundamental for creative development and media planning. Ensures the campaign reaches the right people with the right message.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg md:col-span-2">
+                            <h4 class="font-semibold text-blue-700 mb-2">Campaign Target</h4>
+                            <p class="text-sm text-gray-600">Defines success metrics and objectives. Without it, we cannot measure campaign effectiveness or align team efforts.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="text-gray-700">Validating brief...</p>
+        </div>
+    </div>
+
+    <script>
+        async function validateBrief() {
+            const briefText = document.getElementById('brief-text').value;
+            if (!briefText.trim()) {
+                alert('Please enter some brief text to validate.');
+                return;
+            }
+
+            // Show loading spinner
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.add('hidden');
+
+            try {
+                const response = await fetch('/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ brief_text: briefText }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data.result);
+                } else {
+                    alert(data.error || 'An error occurred while validating the brief.');
+                }
+            } catch (error) {
+                alert('An error occurred while validating the brief.');
+                console.error('Error:', error);
+            } finally {
+                // Hide loading spinner
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.classList.remove('hidden');
+
+            // Display critical missing information with explanations
+            const criticalList = document.getElementById('critical-list');
+            criticalList.innerHTML = '';
+            if (result.missing_critical && result.missing_critical.length > 0) {
+                result.missing_critical.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'critical-item';
+                    div.innerHTML = `
+                        <h4>${item.field}</h4>
+                        <p>${item.explanation}</p>
+                    `;
+                    criticalList.appendChild(div);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'None';
+                criticalList.appendChild(li);
+            }
+
+            // Display non-critical missing information
+            const nonCriticalList = document.getElementById('non-critical-list');
+            nonCriticalList.innerHTML = '';
+            if (result.missing_non_critical && result.missing_non_critical.length > 0) {
+                result.missing_non_critical.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    nonCriticalList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'None';
+                nonCriticalList.appendChild(li);
+            }
+
+            // Display warnings
+            const warningsList = document.getElementById('warnings-list');
+            warningsList.innerHTML = '';
+            if (result.validation_warnings && result.validation_warnings.length > 0) {
+                result.validation_warnings.forEach(warning => {
+                    const li = document.createElement('li');
+                    li.textContent = warning;
+                    warningsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'None';
+                warningsList.appendChild(li);
+            }
+        }
+    </script>
+</body>
+</html> 
